@@ -1,6 +1,6 @@
 """
 models.py - Definisi struktur data dan konstanta untuk Sistem Manajemen Asrama.
-Menggunakan raw sqlite3, file ini berisi konstanta, enum-like values, dan helper.
+File ini berisi konstanta, enum-like values, dan helper untuk sistem berbasis JSON.
 """
 
 # Jenis Kelamin

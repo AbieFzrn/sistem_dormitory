@@ -5,7 +5,7 @@ Entry point utama dengan sistem menu.
 """
 
 import sys
-import database as db
+import storage as db
 from utils import (
     clear_screen, tekan_enter, print_header, print_subheader,
     print_success, print_error, print_warning, print_info,
@@ -1100,11 +1100,11 @@ def menu_statistik():
 
 def menu_seed():
     print_header("DATA CONTOH (SEED)", ["Menu Utama", "Seed"])
-    print(f"  {peringatan('Fitur ini akan memuat data contoh ke database.')}")
-    print(f"  {peringatan('Hanya bisa dilakukan jika database masih kosong.')}")
+    print(f"  {peringatan('Fitur ini akan memuat data contoh ke penyimpanan JSON.')}")
+    print(f"  {peringatan('Hanya bisa dilakukan jika data masih kosong.')}")
     print()
 
-    if not konfirmasi("Muat data contoh ke database?"):
+    if not konfirmasi("Muat data contoh ke sistem?"):
         print_warning("Dibatalkan.")
         tekan_enter()
         return
