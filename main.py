@@ -24,6 +24,7 @@ def menu_kamar():
                 "3. Hapus Kamar",
                 "4. Urutkan Kamar Berdasarkan Sisa Kuota Terbanyak (Merge Sort)",
                 "0. Kembali ke Menu Utama",
+                
             ],
         ).ask()
 
@@ -69,6 +70,8 @@ def menu_kamar():
             )
             ui.render_rooms_table(sorted_rooms, title="Kamar Diurutkan Berdasarkan Sisa Kuota Terbanyak (Merge Sort)")
             ui.pause()
+            
+
 
 
 def menu_penghuni():
@@ -304,6 +307,7 @@ def main():
                 "2. Manajemen Penghuni & Mutasi Kamar (CRUD & Auto-Assign)",
                 "3. Pencarian & Pengurutan Data (Binary Search & Merge Sort)",
                 "4. Pelanggaran Disiplin & Surat Izin Keluar (.txt Export)",
+                "5. Lihat Denah Kamar Asrama",
                 "0. Keluar Aplikasi",
             ],
         ).ask()
@@ -319,6 +323,9 @@ def main():
             menu_searching_sorting()
         elif choice.startswith("4."):
             menu_disiplin_izin()
+        elif choice.startswith("5."):
+            ui.render_dorm_matrix(rooms)
+            ui.pause()
 
 
 if __name__ == "__main__":

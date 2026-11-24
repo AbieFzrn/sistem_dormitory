@@ -148,10 +148,6 @@ def format_surat_peringatan_txt(resident, resident_violations):
 # ==============================================================================
 
 def merge_sort_records(records, key_func, reverse=False):
-    """
-    Implementasi manual algoritma Merge Sort untuk mengurutkan list of dict
-    tanpa menggunakan fungsi sort() / sorted() bawaan Python.
-    """
     if len(records) <= 1:
         return list(records)
 
@@ -178,7 +174,7 @@ def _merge(left, right, key_func, reverse):
 
         if condition:
             merged.append(left[i])
-            i += 1
+            i += 1  
         else:
             merged.append(right[j])
             j += 1
@@ -199,11 +195,7 @@ def _merge(left, right, key_func, reverse):
 # ==============================================================================
 
 def binary_search_by_nim(residents, target_nim):
-    """
-    Implementasi manual algoritma Binary Search untuk mencari penghuni
-    berdasarkan NIM. Data diurutkan terlebih dahulu menggunakan Merge Sort.
-    Returns: (found_resident_dict_or_None, steps_taken)
-    """
+    
     sorted_residents = merge_sort_records(residents, key_func=lambda r: r["nim"], reverse=False)
     target = target_nim.strip().upper()
 

@@ -1,6 +1,6 @@
 # Dormitory Management System (CLI)
 
-Aplikasi Manajemen Asrama Mahasiswa berbasis terminal menggunakan Python dengan penyimpanan murni file teks `.txt` (tanpa GUI dan tanpa DBMS).
+Aplikasi Manajemen Asrama Mahasiswa berbasis terminal menggunakan Python dengan penyimpanan murni file teks `.txt` (tanpa GUI dan tanpa storageMS).
 
 ## Cara Instalasi & Menjalankan
 1. Buka terminal di dalam folder `dormitory_manager`.

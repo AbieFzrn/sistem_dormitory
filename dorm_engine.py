@@ -1,13 +1,12 @@
 
 
 from datetime import datetime
-import storage_handler as db
+import storage_handler as storage
 from algo_utils import (
     parse_room_code,
     generate_next_id,
     sanitize_pipe,
     merge_sort_records,
-    binary_search_by_nim,
     format_surat_izin_txt,
     format_surat_peringatan_txt,
 )
@@ -22,6 +21,10 @@ ATURAN_PELANGGARAN = (
 )
 
 VALID_GENDERS = ("L", "P")
+
+# Status izin yang valid. "Disetujui" dan "Ditolak" bersifat final.
+VALID_PERMIT_STATUS = ("Menunggu", "Disetujui", "Ditolak")
+FINAL_PERMIT_STATUS = ("Disetujui", "Ditolak")
 
 
 # ==============================================================================
@@ -58,7 +61,7 @@ def _recalculate_room_occupancy(rooms, residents):
 # ==============================================================================
 
 def create_room(raw_code, kapasitas):
-    rooms = db.load_rooms()
+    rooms = storage.load_rooms()
     ok, parsed = parse_room_code(raw_code)
     if not ok:
         return False, parsed
@@ -80,12 +83,12 @@ def create_room(raw_code, kapasitas):
         "status": "Tersedia",
     }
     rooms.append(new_room)
-    db.save_rooms(rooms)
+    storage.save_rooms(rooms)
     return True, f"Kamar {new_room['kode']} ({new_room['gedung']}, Lantai {new_room['lantai']}) berhasil ditambahkan."
 
 
 def update_room_capacity(kode_kamar, new_kapasitas):
-    rooms = db.load_rooms()
+    rooms = storage.load_rooms()
     kode = kode_kamar.strip().upper()
     for room in rooms:
         if room["kode"] == kode:
@@ -95,20 +98,20 @@ def update_room_capacity(kode_kamar, new_kapasitas):
                 return False, "Kapasitas kamar harus antara 1 sampai 8 orang."
             room["kapasitas"] = new_kapasitas
             room["status"] = "Penuh" if room["terisi"] >= room["kapasitas"] else "Tersedia"
-            db.save_rooms(rooms)
+            storage.save_rooms(rooms)
             return True, f"Kapasitas kamar {kode} berhasil diperbarui menjadi {new_kapasitas} orang."
     return False, f"Kamar {kode} tidak ditemukan."
 
 
 def delete_room(kode_kamar):
-    rooms = db.load_rooms()
+    rooms = storage.load_rooms()
     kode = kode_kamar.strip().upper()
     for idx, room in enumerate(rooms):
         if room["kode"] == kode:
             if room["terisi"] > 0:
                 return False, f"Kamar {kode} tidak dapat dihapus karena masih dihuni oleh {room['terisi']} mahasiswa!"
             rooms.pop(idx)
-            db.save_rooms(rooms)
+            storage.save_rooms(rooms)
             return True, f"Kamar {kode} berhasil dihapus dari sistem."
     return False, f"Kamar {kode} tidak ditemukan."
 
@@ -138,8 +141,8 @@ def auto_assign_room(rooms, gender):
 
 
 def create_resident(nim, nama, prodi, gender, preferred_room=None):
-    rooms = db.load_rooms()
-    residents = db.load_residents()
+    rooms = storage.load_rooms()
+    residents = storage.load_residents()
 
     nim_clean = nim.strip().upper()
     if nim_clean in get_registered_nims(residents):
@@ -175,13 +178,13 @@ def create_resident(nim, nama, prodi, gender, preferred_room=None):
     }
     residents.append(new_resident)
     _recalculate_room_occupancy(rooms, residents)
-    db.save_residents(residents)
-    db.save_rooms(rooms)
+    storage.save_residents(residents)
+    storage.save_rooms(rooms)
     return True, f"Penghuni {new_resident['nama']} ({nim_clean}) berhasil ditempatkan di kamar {target_code}."
 
 
 def update_resident_profile(nim, new_nama=None, new_prodi=None):
-    residents = db.load_residents()
+    residents = storage.load_residents()
     target_nim = nim.strip().upper()
     for res in residents:
         if res["nim"] == target_nim:
@@ -189,16 +192,16 @@ def update_resident_profile(nim, new_nama=None, new_prodi=None):
                 res["nama"] = sanitize_pipe(new_nama)
             if new_prodi and new_prodi.strip():
                 res["prodi"] = sanitize_pipe(new_prodi).upper()
-            db.save_residents(residents)
+            storage.save_residents(residents)
             return True, f"Data penghuni {target_nim} berhasil diperbarui."
     return False, f"Penghuni dengan NIM {target_nim} tidak ditemukan."
 
 
 def transfer_resident_room(nim, new_room_code, alasan):
     """Mutasi pindah kamar penghuni + pencatatan otomatis ke transfers.txt."""
-    rooms = db.load_rooms()
-    residents = db.load_residents()
-    transfers = db.load_transfers()
+    rooms = storage.load_rooms()
+    residents = storage.load_residents()
+    transfers = storage.load_transfers()
 
     target_nim = nim.strip().upper()
     target_code = new_room_code.strip().upper()
@@ -232,24 +235,24 @@ def transfer_resident_room(nim, new_room_code, alasan):
         "tanggal": datetime.now().strftime("%Y-%m-%d"),
     })
 
-    db.save_residents(residents)
-    db.save_rooms(rooms)
-    db.save_transfers(transfers)
+    storage.save_residents(residents)
+    storage.save_rooms(rooms)
+    storage.save_transfers(transfers)
     return True, f"Mutasi berhasil ({transfer_id}): {resident['nama']} pindah dari {old_code} ke {target_code}."
 
 
 def delete_resident(nim):
     """Checkout / hapus data penghuni dan kurangi keterisian kamar secara otomatis."""
-    rooms = db.load_rooms()
-    residents = db.load_residents()
+    rooms = storage.load_rooms()
+    residents = storage.load_residents()
     target_nim = nim.strip().upper()
 
     for idx, res in enumerate(residents):
         if res["nim"] == target_nim:
             removed = residents.pop(idx)
             _recalculate_room_occupancy(rooms, residents)
-            db.save_residents(residents)
-            db.save_rooms(rooms)
+            storage.save_residents(residents)
+            storage.save_rooms(rooms)
             return True, f"Penghuni {removed['nama']} ({target_nim}) telah checkout dari kamar {removed['kamar']}."
     return False, f"Penghuni dengan NIM {target_nim} tidak ditemukan."
 
@@ -259,8 +262,8 @@ def delete_resident(nim):
 # ==============================================================================
 
 def record_violation(nim, kode_aturan):
-    residents = db.load_residents()
-    violations = db.load_violations()
+    residents = storage.load_residents()
+    violations = storage.load_violations()
 
     target_nim = nim.strip().upper()
     resident = next((r for r in residents if r["nim"] == target_nim), None)
@@ -283,8 +286,8 @@ def record_violation(nim, kode_aturan):
     violations.append(new_v)
     resident["poin"] += aturan[2]
 
-    db.save_violations(violations)
-    db.save_residents(residents)
+    storage.save_violations(violations)
+    storage.save_residents(residents)
 
     msg = f"Pelanggaran {plg_id} dicatat (+{aturan[2]} poin). Total poin {resident['nama']}: {resident['poin']}."
 
@@ -292,7 +295,7 @@ def record_violation(nim, kode_aturan):
     if resident["poin"] >= 50:
         res_violations = [v for v in violations if v["nim"] == target_nim]
         sp_text = format_surat_peringatan_txt(resident, res_violations)
-        sp_path = db.export_document_txt(f"SP_{target_nim}.txt", sp_text)
+        sp_path = storage.export_document_txt(f"SP_{target_nim}.txt", sp_text)
         msg += f"\n[PERINGATAN] Poin >= 50! Surat Peringatan otomatis dicetak ke: {sp_path}"
 
     return True, msg
@@ -302,14 +305,70 @@ def record_violation(nim, kode_aturan):
 # IZIN KELUAR / PULANG MALAM & EKSPOR SURAT .TXT
 # ==============================================================================
 
+def _parse_date(text):
+    """Parse 'YYYY-MM-DD' menjadi objek date. Mengembalikan None jika format/tanggal tidak valid."""
+    try:
+        return datetime.strptime(str(text).strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def validate_permit_dates(tgl_keluar, tgl_kembali):
+    """
+    Validasi tanggal izin.
+    Sukses -> (True, (keluar_iso, kembali_iso)); gagal -> (False, pesan_error).
+    """
+    keluar = _parse_date(tgl_keluar)
+    kembali = _parse_date(tgl_kembali)
+    if keluar is None or kembali is None:
+        return False, "Format tanggal harus YYYY-MM-DD dan tanggalnya harus valid (contoh: 2026-12-01)."
+    if kembali < keluar:
+        return False, (
+            f"Tanggal kembali ({kembali.isoformat()}) tidak boleh lebih awal "
+            f"dari tanggal keluar ({keluar.isoformat()})."
+        )
+    return True, (keluar.isoformat(), kembali.isoformat())
+
+
+def _has_overlapping_permit(permits, nim, keluar_iso, kembali_iso):
+    """Cek apakah NIM sudah punya izin aktif (Menunggu/Disetujui) yang rentang tanggalnya bertabrakan."""
+    new_start = _parse_date(keluar_iso)
+    new_end = _parse_date(kembali_iso)
+    for p in permits:
+        if p["nim"] != nim or p["status"] not in ("Menunggu", "Disetujui"):
+            continue
+        old_start = _parse_date(p["tgl_keluar"])
+        old_end = _parse_date(p["tgl_kembali"])
+        if old_start is None or old_end is None:
+            continue
+        if new_start <= old_end and old_start <= new_end:
+            return p["id"]
+    return None
+
+
 def create_permit(nim, tujuan, tgl_keluar, tgl_kembali):
-    residents = db.load_residents()
-    permits = db.load_permits()
+    ok, result = validate_permit_dates(tgl_keluar, tgl_kembali)
+    if not ok:
+        return False, result
+    tgl_keluar, tgl_kembali = result  # sudah dinormalisasi ke YYYY-MM-DD
+
+    residents = storage.load_residents()
+    permits = storage.load_permits()
 
     target_nim = nim.strip().upper()
-    resident, _ = binary_search_by_nim(residents, target_nim)
+    # Pencarian linear: list residents tidak dijamin terurut, sehingga binary search tidak aman di sini.
+    resident = next((r for r in residents if r["nim"] == target_nim), None)
     if not resident:
         return False, f"Penghuni dengan NIM {target_nim} tidak ditemukan."
+    if resident["status"] != "Aktif":
+        return False, f"Penghuni {target_nim} berstatus '{resident['status']}', tidak dapat mengajukan izin."
+
+    if not tujuan or not tujuan.strip():
+        return False, "Tujuan izin tidak boleh kosong."
+
+    bentrok = _has_overlapping_permit(permits, target_nim, tgl_keluar, tgl_kembali)
+    if bentrok:
+        return False, f"Tanggal izin bertabrakan dengan izin {bentrok} milik NIM {target_nim}."
 
     izin_id = generate_next_id(permits, "id", "IZN")
     new_permit = {
@@ -321,28 +380,37 @@ def create_permit(nim, tujuan, tgl_keluar, tgl_kembali):
         "status": "Menunggu",
     }
     permits.append(new_permit)
-    db.save_permits(permits)
+    storage.save_permits(permits)
     return True, f"Pengajuan izin {izin_id} atas nama {resident['nama']} berhasil dibuat (Status: Menunggu)."
 
 
 def update_permit_status(permit_id, new_status):
-    residents = db.load_residents()
-    permits = db.load_permits()
+    residents = storage.load_residents()
+    permits = storage.load_permits()
 
     pid = permit_id.strip().upper()
+    status_clean = new_status.strip().capitalize()
+    if status_clean not in VALID_PERMIT_STATUS:
+        return False, f"Status '{new_status}' tidak valid. Pilihan: {', '.join(VALID_PERMIT_STATUS)}."
+
     permit = next((p for p in permits if p["id"] == pid), None)
     if not permit:
         return False, f"ID Izin {pid} tidak ditemukan."
 
-    permit["status"] = new_status
-    db.save_permits(permits)
+    if permit["status"] in FINAL_PERMIT_STATUS:
+        return False, f"Izin {pid} sudah berstatus final '{permit['status']}' dan tidak dapat diubah lagi."
+    if status_clean == permit["status"]:
+        return False, f"Izin {pid} sudah berstatus '{status_clean}'."
 
-    msg = f"Status izin {pid} diubah menjadi '{new_status}'."
-    if new_status == "Disetujui":
-        resident, _ = binary_search_by_nim(residents, permit["nim"])
+    permit["status"] = status_clean
+    storage.save_permits(permits)
+
+    msg = f"Status izin {pid} diubah menjadi '{status_clean}'."
+    if status_clean == "Disetujui":
+        resident = next((r for r in residents if r["nim"] == permit["nim"]), None)
         if resident:
             surat_text = format_surat_izin_txt(permit, resident)
-            filepath = db.export_document_txt(f"Surat_Izin_{pid}_{resident['nim']}.txt", surat_text)
+            filepath = storage.export_document_txt(f"Surat_Izin_{pid}_{resident['nim']}.txt", surat_text)
             msg += f"\nSurat izin resmi berhasil diekspor ke: {filepath}"
 
     return True, msg
