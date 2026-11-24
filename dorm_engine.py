@@ -7,7 +7,6 @@ from algo_utils import (
     generate_next_id,
     sanitize_pipe,
     merge_sort_records,
-    binary_search_by_nim,
     format_surat_izin_txt,
     format_surat_peringatan_txt,
 )
@@ -22,6 +21,10 @@ ATURAN_PELANGGARAN = (
 )
 
 VALID_GENDERS = ("L", "P")
+
+# Status izin yang valid. "Disetujui" dan "Ditolak" bersifat final.
+VALID_PERMIT_STATUS = ("Menunggu", "Disetujui", "Ditolak")
+FINAL_PERMIT_STATUS = ("Disetujui", "Ditolak")
 
 
 # ==============================================================================
@@ -302,14 +305,70 @@ def record_violation(nim, kode_aturan):
 # IZIN KELUAR / PULANG MALAM & EKSPOR SURAT .TXT
 # ==============================================================================
 
+def _parse_date(text):
+    """Parse 'YYYY-MM-DD' menjadi objek date. Mengembalikan None jika format/tanggal tidak valid."""
+    try:
+        return datetime.strptime(str(text).strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def validate_permit_dates(tgl_keluar, tgl_kembali):
+    """
+    Validasi tanggal izin.
+    Sukses -> (True, (keluar_iso, kembali_iso)); gagal -> (False, pesan_error).
+    """
+    keluar = _parse_date(tgl_keluar)
+    kembali = _parse_date(tgl_kembali)
+    if keluar is None or kembali is None:
+        return False, "Format tanggal harus YYYY-MM-DD dan tanggalnya harus valid (contoh: 2026-12-01)."
+    if kembali < keluar:
+        return False, (
+            f"Tanggal kembali ({kembali.isoformat()}) tidak boleh lebih awal "
+            f"dari tanggal keluar ({keluar.isoformat()})."
+        )
+    return True, (keluar.isoformat(), kembali.isoformat())
+
+
+def _has_overlapping_permit(permits, nim, keluar_iso, kembali_iso):
+    """Cek apakah NIM sudah punya izin aktif (Menunggu/Disetujui) yang rentang tanggalnya bertabrakan."""
+    new_start = _parse_date(keluar_iso)
+    new_end = _parse_date(kembali_iso)
+    for p in permits:
+        if p["nim"] != nim or p["status"] not in ("Menunggu", "Disetujui"):
+            continue
+        old_start = _parse_date(p["tgl_keluar"])
+        old_end = _parse_date(p["tgl_kembali"])
+        if old_start is None or old_end is None:
+            continue
+        if new_start <= old_end and old_start <= new_end:
+            return p["id"]
+    return None
+
+
 def create_permit(nim, tujuan, tgl_keluar, tgl_kembali):
+    ok, result = validate_permit_dates(tgl_keluar, tgl_kembali)
+    if not ok:
+        return False, result
+    tgl_keluar, tgl_kembali = result  # sudah dinormalisasi ke YYYY-MM-DD
+
     residents = db.load_residents()
     permits = db.load_permits()
 
     target_nim = nim.strip().upper()
-    resident, _ = binary_search_by_nim(residents, target_nim)
+    # Pencarian linear: list residents tidak dijamin terurut, sehingga binary search tidak aman di sini.
+    resident = next((r for r in residents if r["nim"] == target_nim), None)
     if not resident:
         return False, f"Penghuni dengan NIM {target_nim} tidak ditemukan."
+    if resident["status"] != "Aktif":
+        return False, f"Penghuni {target_nim} berstatus '{resident['status']}', tidak dapat mengajukan izin."
+
+    if not tujuan or not tujuan.strip():
+        return False, "Tujuan izin tidak boleh kosong."
+
+    bentrok = _has_overlapping_permit(permits, target_nim, tgl_keluar, tgl_kembali)
+    if bentrok:
+        return False, f"Tanggal izin bertabrakan dengan izin {bentrok} milik NIM {target_nim}."
 
     izin_id = generate_next_id(permits, "id", "IZN")
     new_permit = {
@@ -330,16 +389,25 @@ def update_permit_status(permit_id, new_status):
     permits = db.load_permits()
 
     pid = permit_id.strip().upper()
+    status_clean = new_status.strip().capitalize()
+    if status_clean not in VALID_PERMIT_STATUS:
+        return False, f"Status '{new_status}' tidak valid. Pilihan: {', '.join(VALID_PERMIT_STATUS)}."
+
     permit = next((p for p in permits if p["id"] == pid), None)
     if not permit:
         return False, f"ID Izin {pid} tidak ditemukan."
 
-    permit["status"] = new_status
+    if permit["status"] in FINAL_PERMIT_STATUS:
+        return False, f"Izin {pid} sudah berstatus final '{permit['status']}' dan tidak dapat diubah lagi."
+    if status_clean == permit["status"]:
+        return False, f"Izin {pid} sudah berstatus '{status_clean}'."
+
+    permit["status"] = status_clean
     db.save_permits(permits)
 
-    msg = f"Status izin {pid} diubah menjadi '{new_status}'."
-    if new_status == "Disetujui":
-        resident, _ = binary_search_by_nim(residents, permit["nim"])
+    msg = f"Status izin {pid} diubah menjadi '{status_clean}'."
+    if status_clean == "Disetujui":
+        resident = next((r for r in residents if r["nim"] == permit["nim"]), None)
         if resident:
             surat_text = format_surat_izin_txt(permit, resident)
             filepath = db.export_document_txt(f"Surat_Izin_{pid}_{resident['nim']}.txt", surat_text)
