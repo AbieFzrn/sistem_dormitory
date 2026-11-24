@@ -3,7 +3,7 @@
 import os
 import pyfiglet
 import questionary
-from rich.console import Console
+from rich.console import Console, Group
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
@@ -232,3 +232,81 @@ def render_rules_table(aturan_tuple):
 def pause():
     console.print()
     questionary.press_any_key_to_continue("Tekan tombol apa saja untuk kembali ke menu...").ask()
+
+def render_dorm_matrix(rooms, title="DENAH KAMAR ASRAMA"):
+    if not rooms:
+        show_message(False, "Belum ada data kamar untuk ditampilkan.")
+        return
+
+    console.print(Panel(Text(title, justify="center", style="bold cyan"), box=box.DOUBLE, border_style="bright_blue"))
+
+    sorted_rooms = sorted(rooms, key=lambda r: (r["gedung"], r["lantai"], r["kode"]))
+    grouped = {}
+    for r in sorted_rooms:
+        grouped.setdefault(r["gedung"], {}).setdefault(r["lantai"], []).append(r)
+
+    for gedung, lantai_dict in grouped.items():
+        floor_blocks = []
+
+        for lantai, room_list in lantai_dict.items():
+            cards = []
+            for r in room_list:
+                terisi = r["terisi"]
+                kap = r["kapasitas"]
+                sisa = max(0, kap - terisi)
+                if terisi >= kap:
+                    border_col = "red"
+                    status_tag = "[bold white on red] PENUH [/bold white on red]"
+                    bed_col = "red"
+                elif terisi == 0:
+                    border_col = "cyan"
+                    status_tag = "[bold black on cyan] KOSONG [/bold black on cyan]"
+                    bed_col = "cyan"
+                else:
+                    border_col = "green"
+                    status_tag = "[bold white on green] TERSEDIA [/bold white on green]"
+                    bed_col = "green"
+
+                sep = " " if kap <= 4 else ""
+                slots = f"[{bed_col}]{sep.join(['■'] * terisi)}[/{bed_col}]"
+                if sisa > 0:
+                    prefix_sep = sep if terisi > 0 else ""
+                    slots += f"[dim]{prefix_sep}{sep.join(['□'] * sisa)}[/dim]"
+
+                card_content = (
+                    f"[bold white]{r['kode']}[/bold white]\n"
+                    f"{slots}\n"
+                    f"[dim]{terisi}/{kap} Bed[/dim]\n"
+                    f"{status_tag}"
+                )
+
+                cards.append(
+                    Panel(
+                        Text.from_markup(card_content, justify="center"),
+                        border_style=border_col,
+                        box=box.ROUNDED,
+                        width=20,
+                        padding=(0, 1),
+                    )
+                )
+
+            floor_blocks.append(f"[bold yellow]📂 Lantai {lantai}[/bold yellow]")
+            floor_blocks.append(Columns(cards, equal=True, expand=False))
+
+        # Bungkus satu gedung utuh dalam satu Panel besar
+        from rich.console import Group
+        console.print(
+            Panel(
+                Group(*floor_blocks),
+                title=f"[bold white]🏛️  {gedung.upper()}[/bold white]",
+                border_style="blue",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            )
+        )
+
+    # Legenda keterangan warna di bagian bawah
+    console.print(
+        "  [bold]Legenda:[/bold] [green]■[/green] Terisi  [dim]□[/dim] Kosong   │   "
+        "[cyan]■[/cyan] Kosong   [green]■[/green] Tersedia   [red]■[/red] Penuh\n"
+    )
