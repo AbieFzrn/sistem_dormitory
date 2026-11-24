@@ -34,10 +34,7 @@ def parse_room_code(raw_code):
 
 
 def generate_next_id(records, id_key, prefix):
-    """
-    Menghasilkan ID berurutan otomatis (contoh: 'PLG-004' -> 'PLG-005')
-    menggunakan string slicing dan zero-padding formatting.
-    """
+
     max_num = 0
     prefix_dash = f"{prefix}-"
     for rec in records:
@@ -52,7 +49,6 @@ def generate_next_id(records, id_key, prefix):
 
 
 def validate_nim(raw_nim):
-    """Validasi string NIM mahasiswa (minimal 8 karakter alfanumerik, tanpa '|')."""
     nim = raw_nim.strip().upper()
     if "|" in nim or " " in nim:
         return False, "NIM tidak boleh mengandung spasi atau karakter '|'."
@@ -62,7 +58,6 @@ def validate_nim(raw_nim):
 
 
 def validate_date_str(raw_date):
-    """Validasi format tanggal YYYY-MM-DD menggunakan string slicing & datetime."""
     date_str = raw_date.strip()
     if len(date_str) != 10 or date_str[4] != "-" or date_str[7] != "-":
         return False, "Format tanggal wajib YYYY-MM-DD (contoh: 2026-11-25)."
@@ -74,12 +69,10 @@ def validate_date_str(raw_date):
 
 
 def sanitize_pipe(text):
-    """Mencegah karakter delimiter '|' merusak struktur file .txt."""
     return text.strip().replace("|", "/")
 
 
 def format_surat_izin_txt(permit, resident):
-    """Menyusun teks formal Surat Izin Keluar Asrama untuk diekspor ke .txt."""
     garis = "=" * 62
     subgaris = "-" * 62
     return (
@@ -109,7 +102,6 @@ def format_surat_izin_txt(permit, resident):
 
 
 def format_surat_peringatan_txt(resident, resident_violations):
-    """Menyusun teks Surat Peringatan (SP) otomatis jika poin pelanggaran >= 50."""
     garis = "=" * 62
     subgaris = "-" * 62
     tingkat_sp = "SP-2 (KRITIS / EVALUASI KELAYAKAN)" if resident["poin"] >= 80 else "SP-1 (PERINGATAN KERAS)"
@@ -142,11 +134,7 @@ def format_surat_peringatan_txt(resident, resident_violations):
         f"Dicetak otomatis pada: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
     )
 
-
-# ==============================================================================
-# 2. ALGORITMA SORTING MANUAL (MERGE SORT - O(n log n))
-# ==============================================================================
-
+#sorting merge
 def merge_sort_records(records, key_func, reverse=False):
     if len(records) <= 1:
         return list(records)
@@ -190,10 +178,6 @@ def _merge(left, right, key_func, reverse):
     return merged
 
 
-# ==============================================================================
-# 3. ALGORITMA SEARCHING MANUAL (BINARY SEARCH & LINEAR SUBSTRING SEARCH)
-# ==============================================================================
-
 def binary_search_by_nim(residents, target_nim):
     
     sorted_residents = merge_sort_records(residents, key_func=lambda r: r["nim"], reverse=False)
@@ -219,10 +203,6 @@ def binary_search_by_nim(residents, target_nim):
 
 
 def linear_search_by_name(residents, keyword):
-    """
-    Implementasi Linear Substring Search (case-insensitive) untuk mencari
-    penghuni berdasarkan potongan nama.
-    """
     query = keyword.strip().lower()
     results = []
     for res in residents:

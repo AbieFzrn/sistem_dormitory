@@ -1,5 +1,3 @@
-
-
 import os
 import pyfiglet
 import questionary
@@ -116,15 +114,24 @@ def render_residents_table(residents, title="Daftar Penghuni Asrama"):
     table.add_column("Kamar", style="yellow", justify="center")
     table.add_column("Tgl Masuk", justify="center")
     table.add_column("Poin", justify="right")
+    table.add_column("Status", justify="center")
 
     for res in residents:
         poin = res["poin"]
-        if poin >= 50:
+        if poin >= 100:
+            poin_str = f"[bold red]{poin} (DO)[/bold red]"
+        elif poin >= 50:
             poin_str = f"[bold red]{poin} (SP)[/bold red]"
         elif poin > 0:
             poin_str = f"[yellow]{poin}[/yellow]"
         else:
             poin_str = "[green]0[/green]"
+
+        status_str = (
+            "[bold green]Aktif[/bold green]"
+            if res["status"] == "Aktif"
+            else f"[bold red]{res['status']}[/bold red]"
+        )
 
         table.add_row(
             res["nim"],
@@ -134,6 +141,7 @@ def render_residents_table(residents, title="Daftar Penghuni Asrama"):
             res["kamar"],
             res["tgl_masuk"],
             poin_str,
+            status_str,
         )
 
     console.print(table)
@@ -233,6 +241,7 @@ def pause():
     console.print()
     questionary.press_any_key_to_continue("Tekan tombol apa saja untuk kembali ke menu...").ask()
 
+
 def render_dorm_matrix(rooms, title="DENAH KAMAR ASRAMA"):
     if not rooms:
         show_message(False, "Belum ada data kamar untuk ditampilkan.")
@@ -293,8 +302,6 @@ def render_dorm_matrix(rooms, title="DENAH KAMAR ASRAMA"):
             floor_blocks.append(f"[bold yellow]📂 Lantai {lantai}[/bold yellow]")
             floor_blocks.append(Columns(cards, equal=True, expand=False))
 
-        # Bungkus satu gedung utuh dalam satu Panel besar
-        from rich.console import Group
         console.print(
             Panel(
                 Group(*floor_blocks),
@@ -305,7 +312,6 @@ def render_dorm_matrix(rooms, title="DENAH KAMAR ASRAMA"):
             )
         )
 
-    # Legenda keterangan warna di bagian bawah
     console.print(
         "  [bold]Legenda:[/bold] [green]■[/green] Terisi  [dim]□[/dim] Kosong   │   "
         "[cyan]■[/cyan] Kosong   [green]■[/green] Tersedia   [red]■[/red] Penuh\n"
