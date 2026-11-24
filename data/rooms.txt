@@ -1,0 +1,6 @@
+# KodeKamar|Gedung|Lantai|Gender|Kapasitas|Terisi|Status
+A-101|Putra A|1|L|4|2|Tersedia
+A-102|Putra A|1|L|8|4|Tersedia
+A-201|Putra A|2|L|4|1|Tersedia
+B-101|Putri B|1|P|4|2|Tersedia
+B-201|Putri B|2|P|4|0|Tersedia

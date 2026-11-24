@@ -1,0 +1,10 @@
+# NIM|Nama|Prodi|Gender|KodeKamar|TanggalMasuk|TotalPoin|Status
+J0403261001|Rizky Pratama|TRPL|L|A-101|2026-08-15|0|Aktif
+J0403261002|Dimas Saputra|TRPL|L|A-101|2026-08-15|15|Aktif
+J0403261003|Fajar Nugroho|TEK|L|A-102|2026-08-16|40|Aktif
+J0403261004|Bagas Kurniawan|MAB|L|A-102|2026-08-16|0|Aktif
+J0403261005|Ilham Ramadhan|INF|L|A-102|2026-08-17|10|Aktif
+J0403261006|Hendra Wijaya|TRPL|L|A-102|2026-08-17|0|Aktif
+J0403261007|Naufal Hakim|GZI|L|A-201|2026-08-18|0|Aktif
+J0403261011|Nadia Putri|TRPL|P|B-101|2026-08-15|0|Aktif
+J0403261012|Siti Aisyah|KMN|P|B-101|2026-08-16|10|Aktif

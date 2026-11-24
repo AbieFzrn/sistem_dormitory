@@ -1,0 +1,4 @@
+# IDIzin|NIM|Tujuan|TanggalKeluar|TanggalKembali|Status
+IZN-001|J0403261001|Pulang ke rumah orang tua (Bandung)|2026-11-27|2026-11-29|Disetujui
+IZN-002|J0403261011|Kegiatan lomba hackathon kampus|2026-11-25|2026-11-26|Disetujui
+IZN-003|J0403261002|Ngaloco|2026-10-22|2026-12-12|Disetujui

@@ -1,0 +1,22 @@
+==============================================================
+           SURAT IZIN KELUAR / PULANG MALAM ASRAMA            
+               UNIT PENGELOLA ASRAMA MAHASISWA                
+==============================================================
+Nomor Surat   : IZN-002/ASR-IZN/2026
+Status Izin   : DISETUJUI
+--------------------------------------------------------------
+Data Penghuni yang Mengajukan:
+  Nama Lengkap : Nadia Putri
+  NIM          : J0403261011
+  Program Studi: TRPL
+  Kamar Asrama : B-101
+--------------------------------------------------------------
+Rincian Perizinan:
+  Keperluan    : Kegiatan lomba hackathon kampus
+  Tgl Keluar   : 2026-11-25
+  Tgl Kembali  : 2026-11-26
+--------------------------------------------------------------
+Catatan: Harap menunjukkan surat ini kepada petugas gerbang
+asrama saat keluar maupun kembali ke lingkungan asrama.
+==============================================================
+Dicetak otomatis pada: 2026-11-24 16:42:44

@@ -1,0 +1,5 @@
+# IDPelanggaran|NIM|KodeAturan|Deskripsi|Poin|Tanggal
+PLG-001|J0403261002|AT-02|Terlambat jam malam (>22.00)|15|2026-11-10
+PLG-002|J0403261003|AT-05|Merusak fasilitas kamar|40|2026-11-12
+PLG-003|J0403261005|AT-03|Kamar kotor saat inspeksi|10|2026-11-14
+PLG-004|J0403261012|AT-03|Kamar kotor saat inspeksi|10|2026-11-15
