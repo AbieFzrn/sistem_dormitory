@@ -1,4 +1,3 @@
-
 import questionary
 from rich.console import Console
 
@@ -24,7 +23,6 @@ def menu_kamar():
                 "3. Hapus Kamar",
                 "4. Urutkan Kamar Berdasarkan Sisa Kuota Terbanyak (Merge Sort)",
                 "0. Kembali ke Menu Utama",
-                
             ],
         ).ask()
 
@@ -70,8 +68,6 @@ def menu_kamar():
             )
             ui.render_rooms_table(sorted_rooms, title="Kamar Diurutkan Berdasarkan Sisa Kuota Terbanyak (Merge Sort)")
             ui.pause()
-            
-
 
 
 def menu_penghuni():
@@ -120,11 +116,11 @@ def menu_penghuni():
             if mode_kamar and mode_kamar.startswith("MANUAL"):
                 preferred = questionary.text("Masukkan Kode Kamar Tujuan (contoh: A-101):").ask() or "AUTO"
 
-            if nama and prodi:
+            if nama and nama.strip() and prodi and prodi.strip() and gender:
                 ok, msg = engine.create_resident(nim_or_err, nama, prodi, gender, preferred)
                 ui.show_message(ok, msg)
             else:
-                ui.show_message(False, "Nama dan Prodi wajib diisi.")
+                ui.show_message(False, "Nama, Prodi, dan Gender wajib diisi.")
             ui.pause()
 
         elif choice.startswith("2."):
@@ -225,10 +221,13 @@ def menu_disiplin_izin():
             "Menu Pelanggaran & Perizinan Keluar:",
             choices=[
                 "1. Lihat Log Pelanggaran & Standar Aturan",
-                "2. Catat Pelanggaran Baru (Auto-Generate SP .txt jika Poin >= 50)",
-                "3. Lihat Daftar Pengajuan Izin Keluar",
-                "4. Ajukan Izin Keluar / Pulang Malam Baru",
-                "5. Proses Persetujuan Izin (Auto-Cetak Surat Izin .txt)",
+                "2. Catat Pelanggaran Baru",
+                "3. Ubah Jenis Pelanggaran",
+                "4. Hapus Catatan Pelanggaran",
+                "5. Lihat Daftar Pengajuan Izin Keluar",
+                "6. Ajukan Izin Keluar / Pulang Malam Baru",
+                "7. Proses Persetujuan Izin (Auto-Cetak Surat Izin .txt)",
+                "8. Hapus / Batalkan Pengajuan Izin",
                 "0. Kembali ke Menu Utama",
             ],
         ).ask()
@@ -246,17 +245,43 @@ def menu_disiplin_izin():
             nim = questionary.text("Masukkan NIM Penghuni yang melanggar:").ask()
             rule_choices = [f"{a[0]} | {a[1]} (+{a[2]} poin)" for a in engine.ATURAN_PELANGGARAN]
             selected_rule = questionary.select("Pilih Jenis Pelanggaran:", choices=rule_choices).ask()
-            if nim and selected_rule:
+            if nim and nim.strip() and selected_rule:
                 kode_aturan = selected_rule.split("|")[0].strip()
                 ok, msg = engine.record_violation(nim, kode_aturan)
                 ui.show_message(ok, msg)
-                ui.pause()
+            else:
+                ui.show_message(False, "Input dibatalkan atau NIM tidak boleh kosong.")
+            ui.pause()
 
         elif choice.startswith("3."):
-            ui.render_permits_table(permits, residents)
+            ui.render_violations_table(violations, residents)
+            ui.render_rules_table(engine.ATURAN_PELANGGARAN)
+            plg_id = questionary.text("Masukkan ID Pelanggaran yang akan diubah (contoh: PLG-001):").ask()
+            rule_choices = [f"{a[0]} | {a[1]} (+{a[2]} poin)" for a in engine.ATURAN_PELANGGARAN]
+            selected_rule = questionary.select("Pilih Jenis Pelanggaran Baru:", choices=rule_choices).ask()
+            if plg_id and plg_id.strip() and selected_rule:
+                kode_aturan = selected_rule.split("|")[0].strip()
+                ok, msg = engine.update_violation(plg_id, kode_aturan)
+                ui.show_message(ok, msg)
+            else:
+                ui.show_message(False, "Input dibatalkan atau ID Pelanggaran tidak boleh kosong.")
             ui.pause()
 
         elif choice.startswith("4."):
+            ui.render_violations_table(violations, residents)
+            plg_id = questionary.text("Masukkan ID Pelanggaran yang akan dihapus (contoh: PLG-001):").ask()
+            if plg_id and plg_id.strip():
+                confirm = questionary.confirm(f"Yakin ingin menghapus pelanggaran {plg_id.upper()}?").ask()
+                if confirm:
+                    ok, msg = engine.delete_violation(plg_id)
+                    ui.show_message(ok, msg)
+                    ui.pause()
+
+        elif choice.startswith("5."):
+            ui.render_permits_table(permits, residents)
+            ui.pause()
+
+        elif choice.startswith("6."):
             nim = questionary.text("Masukkan NIM Pemohon:").ask()
             tujuan = questionary.text("Keperluan / Tujuan Izin:").ask()
             tgl_keluar = questionary.text("Tanggal Keluar (YYYY-MM-DD):").ask()
@@ -278,14 +303,26 @@ def menu_disiplin_izin():
             ui.show_message(ok, msg)
             ui.pause()
 
-        elif choice.startswith("5."):
+        elif choice.startswith("7."):
             ui.render_permits_table(permits, residents)
             pid = questionary.text("Masukkan ID Izin (contoh: IZN-002):").ask()
             status = questionary.select("Keputusan Pengelola:", choices=["Disetujui", "Ditolak"]).ask()
-            if pid and status:
+            if pid and pid.strip() and status:
                 ok, msg = engine.update_permit_status(pid, status)
                 ui.show_message(ok, msg)
-                ui.pause()
+            else:
+                ui.show_message(False, "Input dibatalkan atau ID Izin tidak boleh kosong.")
+            ui.pause()
+
+        elif choice.startswith("8."):
+            ui.render_permits_table(permits, residents)
+            pid = questionary.text("Masukkan ID Izin yang akan dihapus (contoh: IZN-002):").ask()
+            if pid and pid.strip():
+                confirm = questionary.confirm(f"Yakin ingin menghapus izin {pid.upper()}?").ask()
+                if confirm:
+                    ok, msg = engine.delete_permit(pid)
+                    ui.show_message(ok, msg)
+                    ui.pause()
 
 
 def main():

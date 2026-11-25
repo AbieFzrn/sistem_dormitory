@@ -17,7 +17,6 @@ def ensure_directories():
 
 
 def init_storage():
-    """Membuat folder dan mengisi data awal (seed) jika file .txt belum tersedia."""
     ensure_directories()
 
     if not os.path.exists(ROOMS_FILE):
@@ -226,7 +225,6 @@ def save_transfers(transfers):
 
 
 def export_document_txt(filename, content):
-    """Menyimpan dokumen resmi (Surat Izin / Surat Peringatan) ke file .txt fisik."""
     ensure_directories()
     filepath = os.path.join(OUTPUT_DIR, filename)
     with open(filepath, "w", encoding="utf-8") as f:
